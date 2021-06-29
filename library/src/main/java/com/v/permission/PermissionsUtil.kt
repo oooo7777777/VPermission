@@ -278,7 +278,7 @@ object PermissionsUtil {
             Manifest.permission.ACCESS_COARSE_LOCATION ->
                 return PermissionBean("位置权限", it)
             Manifest.permission.RECORD_AUDIO ->
-                return PermissionBean("麦克风权限", it)
+                return PermissionBean("录音权限", it)
             Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.CALL_PHONE,
             Manifest.permission.READ_CALL_LOG,
@@ -348,7 +348,7 @@ object PermissionsUtil {
                 return PermissionBean("读取内存卡权限", it)
             // MICROPHONE 麦克风权限组
             Manifest.permission.RECORD_AUDIO ->
-                return PermissionBean("麦克风权限", it)
+                return PermissionBean("录音权限", it)
             //SMS 通信服务权限组
             Manifest.permission.READ_SMS ->
                 return PermissionBean("读取短信记录权限", it)
