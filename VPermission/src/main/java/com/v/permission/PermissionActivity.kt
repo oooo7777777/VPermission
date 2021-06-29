@@ -23,9 +23,7 @@ class PermissionActivity : AppCompatActivity() {
         private const val PERMISSION_REQUEST_CODE = 64
     }
 
-    private lateinit var permission: ArrayList<String>
-
-    private lateinit var permissionBean: ArrayList<PermissionBean>
+    private lateinit var permissionListBean: ArrayList<PermissionBean>
 
     private var isRequireCheck = false
     private var key: String? = null
@@ -40,7 +38,7 @@ class PermissionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (intent == null || !intent.hasExtra("permission") || !intent.hasExtra("permissionBean")) {
+        if (intent == null || !intent.hasExtra("permissionListBean")) {
             finish()
             return
         }
@@ -49,13 +47,8 @@ class PermissionActivity : AppCompatActivity() {
 
         intent?.run {
 
-
-            if (this.hasExtra("permission")) {
-                permission = this.getStringArrayListExtra("permission") as ArrayList<String>
-            } else if (this.hasExtra("permissionBean")) {
-                permissionBean =
-                    this.getSerializableExtra("permissionBean") as ArrayList<PermissionBean>
-            }
+            permissionListBean =
+                this.getSerializableExtra("permissionListBean") as ArrayList<PermissionBean>
 
             pkName = this.getStringExtra("packageName")
             key = this.getStringExtra("key")
@@ -63,21 +56,8 @@ class PermissionActivity : AppCompatActivity() {
             isShowRefuseDialog = this.getBooleanExtra("isShowRefuseDialog", true)
             isTipDetail = this.getBooleanExtra("isTipDetail", true)
 
-            beanFirst = (this.getSerializableExtra("beanFirst") ?: PermissionHintBean(
-                "权限申请",
-                "请允许以下权限，否则将影响应用的正常使用。",
-                "取消",
-                "确定"
-            )) as PermissionHintBean
-
-
-            beanRefuse = (this.getSerializableExtra("beanRefuse") ?: PermissionHintBean(
-                "部分功能无法使用",
-                "请允许以下权限，否则将影响应用的正常使用。",
-                "取消",
-                "去授权"
-            )) as PermissionHintBean
-
+            beanFirst = this.getSerializableExtra("beanFirst")  as PermissionHintBean
+            beanRefuse = this.getSerializableExtra("beanRefuse")  as PermissionHintBean
 
         }
 
@@ -87,7 +67,7 @@ class PermissionActivity : AppCompatActivity() {
         super.onResume()
         if (isRequireCheck) {
             when {
-                PermissionsUtil.hasPermission(this, permission) -> {
+                PermissionsUtil.hasPermission(this, permissionListBean) -> {
                     permissionsPass()
                 }
                 else -> {
@@ -140,7 +120,7 @@ class PermissionActivity : AppCompatActivity() {
                         PermissionsUtil.getPermissionDenied(
                             this,
                             isTipDetail,
-                            permission
+                            permissionListBean
                         )
                     )
         )
@@ -157,7 +137,7 @@ class PermissionActivity : AppCompatActivity() {
     // 显示需要权限提示
     private fun showNeedPermissionDialog() {
 
-        var listOff = PermissionsUtil.getPermissionDenied(this, isTipDetail, permission)
+        var listOff = PermissionsUtil.getPermissionDenied(this, isTipDetail, permissionListBean)
         val dialog = AlertDialog.Builder(this)
         dialog.setTitle(beanFirst.title)
         dialog.setMessage(beanFirst.content + PermissionsUtil.getTipMsg(listOff))
@@ -179,7 +159,7 @@ class PermissionActivity : AppCompatActivity() {
     private fun permissionsDenied() {
         PermissionsUtil.fetchListener(key)?.run {
             onDenied(
-                PermissionsUtil.getPermissionDenied(this@PermissionActivity, true, permission),
+                PermissionsUtil.getPermissionDenied(this@PermissionActivity, true, permissionListBean),
                 false
             )
         }
@@ -189,7 +169,7 @@ class PermissionActivity : AppCompatActivity() {
     // 全部权限均已获取
     private fun permissionsPass() {
         PermissionsUtil.fetchListener(key)?.run {
-            onPass(PermissionsUtil.getPermissionPass(this@PermissionActivity, true, permission))
+            onPass(PermissionsUtil.getPermissionPass(this@PermissionActivity, true, permissionListBean))
         }
         finish()
     }

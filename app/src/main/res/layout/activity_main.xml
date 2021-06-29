@@ -8,18 +8,25 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/btAlone"
+        android:id="@+id/bt0"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:text="开启单个权限" />
 
     <Button
-        android:id="@+id/btGroup"
+        android:id="@+id/bt1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:text="开启一组权限" />
+
+    <Button
+        android:id="@+id/bt2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:text="自定义权限提示" />
 
     <TextView
         android:id="@+id/tvContent"

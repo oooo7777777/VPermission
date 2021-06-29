@@ -25,93 +25,80 @@ object PermissionsUtil {
 
     private val listenerMap = HashMap<String, PermissionListener>()
 
-    /**
-     *
-     * @param context
-     * @param listener
-     * @param permissions 需要申请授权的权限
-     * @param beanFirst   授权提示时显示Dialog设置 //不传将使用默认的
-     * @param beanRefuse  授权拒绝后显示的Dialog设置 //不传将使用默认的
-     * @param isShowRefuseDialog   当用户拒绝授权后，是否再次弹框显示 //默认显示
-     * @param isTipDetail    权限提示是否显示详细的文字 //默认显示详细的文字
-     */
     fun requestPermission(
         context: Context,
-        beanFirst: PermissionHintBean? = null,
-        beanRefuse: PermissionHintBean? = null,
-        isShowRefuseDialog: Boolean = true,
-        isTipDetail: Boolean = true,
+        config: PermissionConfig,
         listener: PermissionListener,
         vararg permissions: String
     ) {
 
-        var list = ArrayList<String>()
-        permissions.forEach {
-            list.add(it)
+        config?.run {
+
+            var list = ArrayList<PermissionBean>()
+
+            permissions.forEach {
+                if (isTipDetail) {
+                    getPermissionTipDetail(it)?.run {
+                        list.add(this)
+                    }
+                } else {
+                    getPermissionTip(it)?.run {
+                        list.add(this)
+                    }
+                }
+            }
+
+            if (hasPermission(context, list)) {
+                listener.onPass(list)
+            } else {
+
+                val key = System.currentTimeMillis().toString()
+                listenerMap[key] = listener
+                val intent = Intent(context, PermissionActivity::class.java)
+                intent.putExtra("permissionListBean", list)
+                intent.putExtra("packageName", context.packageName)
+                intent.putExtra("key", key)
+                intent.putExtra("beanFirst", beanFirst)
+                intent.putExtra("beanRefuse", beanRefuse)
+                intent.putExtra("isShowRefuseDialog", isShowRefuseDialog)
+                intent.putExtra("isTipDetail", isTipDetail)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
+
         }
 
-        if (hasPermission(context, list)) {
-            listener.onPass(getPermissionPass(context, isTipDetail, list))
-        } else {
-
-            val key = System.currentTimeMillis().toString()
-            listenerMap[key] = listener
-            val intent = Intent(context, PermissionActivity::class.java)
-            intent.putStringArrayListExtra("permission", list)
-            intent.putExtra("packageName", context.packageName)
-            intent.putExtra("key", key)
-            intent.putExtra("beanFirst", beanFirst)
-            intent.putExtra("beanRefuse", beanRefuse)
-            intent.putExtra("isShowRefuseDialog", isShowRefuseDialog)
-            intent.putExtra("isTipDetail", isTipDetail)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        }
     }
 
 
-    /**
-     *
-     * @param context
-     * @param listener
-     * @param permissionBean 需要申请授权的权限 //这里面针对每一个权限做自己的解释,比如需要申请相机权限用来作用于更换头像
-     * @param beanFirst   授权提示时显示Dialog设置 //不传将使用默认的
-     * @param beanRefuse  授权拒绝后显示的Dialog设置 //不传将使用默认的
-     * @param isShowRefuseDialog   当用户拒绝授权后，是否再次弹框显示 //默认显示
-     * @param isTipDetail    权限提示是否显示详细的文字 //默认显示详细的文字
-     */
     fun requestPermission(
         context: Context,
-        beanFirst: PermissionHintBean? = null,
-        beanRefuse: PermissionHintBean? = null,
-        isShowRefuseDialog: Boolean = true,
-        isTipDetail: Boolean = true,
+        config: PermissionConfig,
         listener: PermissionListener,
-        permissionBean: ArrayList<PermissionBean>
+        list: ArrayList<PermissionBean>
     ) {
 
-        var list = ArrayList<String>()
-        permissionBean.forEach {
-            list.add(it.permission)
+        config.run {
+
+            if (hasPermission(context, list)) {
+                listener.onPass(list)
+            } else {
+
+                val key = System.currentTimeMillis().toString()
+                listenerMap[key] = listener
+                val intent = Intent(context, PermissionActivity::class.java)
+                intent.putExtra("permissionListBean", list)
+                intent.putExtra("packageName", context.packageName)
+                intent.putExtra("key", key)
+                intent.putExtra("beanFirst", beanFirst)
+                intent.putExtra("beanRefuse", beanRefuse)
+                intent.putExtra("isShowRefuseDialog", isShowRefuseDialog)
+                intent.putExtra("isTipDetail", isTipDetail)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
         }
 
-        if (hasPermission(context, list)) {
-            listener.onPass(getPermissionPass(context, isTipDetail, list))
-        } else {
-
-            val key = System.currentTimeMillis().toString()
-            listenerMap[key] = listener
-            val intent = Intent(context, PermissionActivity::class.java)
-            intent.putExtra("permissionBean", permissionBean)
-            intent.putExtra("packageName", context.packageName)
-            intent.putExtra("key", key)
-            intent.putExtra("beanFirst", beanFirst)
-            intent.putExtra("beanRefuse", beanRefuse)
-            intent.putExtra("isShowRefuseDialog", isShowRefuseDialog)
-            intent.putExtra("isTipDetail", isTipDetail)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        }
     }
 
     /**
@@ -121,12 +108,12 @@ object PermissionsUtil {
      * @param permissions
      * @return
      */
-    fun hasPermission(context: Context, permissions: ArrayList<String>): Boolean {
+    fun hasPermission(context: Context, permissions: ArrayList<PermissionBean>): Boolean {
         if (permissions.isEmpty()) {
             return false
         }
         for (per in permissions) {
-            val result = PermissionChecker.checkSelfPermission(context, per)
+            val result = PermissionChecker.checkSelfPermission(context, per.permission)
             if (result != PermissionChecker.PERMISSION_GRANTED) {
                 return false
             }
@@ -163,7 +150,7 @@ object PermissionsUtil {
     fun getPermissionDenied(
         @NonNull context: Context,
         isTipDetail: Boolean,
-        permissions: ArrayList<String>
+        permissions: ArrayList<PermissionBean>
     ): ArrayList<PermissionBean> {
         val list = ArrayList<PermissionBean>()
         if (permissions.isEmpty()) {
@@ -171,17 +158,22 @@ object PermissionsUtil {
         }
 
         permissions.forEach {
-            val result = PermissionChecker.checkSelfPermission(context, it)
+            val result = PermissionChecker.checkSelfPermission(context, it.permission)
             if (result != PackageManager.PERMISSION_GRANTED) {
 
-                if (isTipDetail) {
-                    getPermissionTipDetail(it)?.run {
-                        list.add(this)
+                //如果用户没有自定义权限的文案 就获取默认的
+                if (it.des.isNullOrEmpty()) {
+                    if (isTipDetail) {
+                        getPermissionTipDetail(it.permission)?.run {
+                            list.add(this)
+                        }
+                    } else {
+                        getPermissionTip(it.permission)?.run {
+                            list.add(this)
+                        }
                     }
                 } else {
-                    getPermissionTip(it)?.run {
-                        list.add(this)
-                    }
+                    list.add(it)
                 }
             }
         }
@@ -199,7 +191,7 @@ object PermissionsUtil {
     fun getPermissionPass(
         @NonNull context: Context,
         isTipDetail: Boolean,
-        permissions: ArrayList<String>
+        permissions: ArrayList<PermissionBean>
     ): ArrayList<PermissionBean> {
         val list = ArrayList<PermissionBean>()
         if (permissions.isEmpty()) {
@@ -207,16 +199,20 @@ object PermissionsUtil {
         }
 
         permissions.forEach {
-            val result = PermissionChecker.checkSelfPermission(context, it)
+            val result = PermissionChecker.checkSelfPermission(context, it.permission)
             if (result == PermissionChecker.PERMISSION_GRANTED) {
-                if (isTipDetail) {
-                    getPermissionTipDetail(it)?.run {
-                        list.add(this)
+                if (it.des.isNullOrEmpty()) {
+                    if (isTipDetail) {
+                        getPermissionTipDetail(it.permission)?.run {
+                            list.add(this)
+                        }
+                    } else {
+                        getPermissionTip(it.permission)?.run {
+                            list.add(this)
+                        }
                     }
                 } else {
-                    getPermissionTip(it)?.run {
-                        list.add(this)
-                    }
+                    list.add(it)
                 }
             }
         }
