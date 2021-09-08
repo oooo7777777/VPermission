@@ -9,7 +9,7 @@
         android:supportsRtl="true">
 
         <activity
-            android:name=".PermissionActivity"
+            android:name=".VPermissionsActivity"
             android:theme="@style/PermissionsStyle" />
 
     </application>

@@ -28,10 +28,13 @@
         android:layout_margin="10dp"
         android:text="自定义权限提示" />
 
-    <TextView
-        android:id="@+id/tvContent"
-        android:textColor="@color/black"
-        android:layout_margin="10dp"
+
+    <Button
+        android:id="@+id/bt3"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:text="自定义Dialog" />
+
+
 </LinearLayout>
