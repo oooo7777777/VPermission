@@ -89,13 +89,36 @@ class VPermissions {
             val key = System.currentTimeMillis().toString()
             VPermissionsUtil.callbackMap[key] = permissions.permissionsListener!!
 
-            val intent = Intent(context, VPermissionsActivity::class.java)
-            intent.putExtra("permissionListBean", list)
-            intent.putExtra("packageName", context.packageName)
-            intent.putExtra("key", key)
-            intent.putExtra("config", permissions.config)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            //永不提醒
+            var listNeverRemind = ArrayList<VPermissionsBean>()
+            list?.forEach {
+                val sp = VPermissionsSPUtil.getInstance(context).getString(it.permission)
+                if (!sp.isNullOrEmpty()) {
+                    listNeverRemind.add(it)
+                }
+            }
+
+
+            if (VPermissionsUtil.hasPermission(context, list!!)) {
+                VPermissionsUtil.fetchCallbackListener(key)?.run {
+                    onPass(list!!)
+                }
+            } else {
+                if (listNeverRemind.size > 0) {
+                    permissionsListener?.onNeverRemind(listNeverRemind)
+                }
+
+                val intent = Intent(context, VPermissionsActivity::class.java)
+                intent.putExtra("permissionListBean", list)
+                intent.putExtra("packageName", context.packageName)
+                intent.putExtra("key", key)
+                intent.putExtra("config", permissions.config)
+                intent.putExtra("isSetting", listNeverRemind.size > 0)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
+
+
         }
     }
 }

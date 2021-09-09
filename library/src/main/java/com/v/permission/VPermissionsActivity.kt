@@ -1,12 +1,9 @@
 package com.v.permission
 
-import android.app.Activity
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -19,17 +16,22 @@ class VPermissionsActivity : AppCompatActivity() {
 
 
     companion object {
-        private const val PERMISSION_REQUEST_CODE = 64
+        private const val PERMISSION_REQUEST_CODE = 964
     }
 
     private lateinit var permissionListBean: ArrayList<VPermissionsBean>
 
-    private var isRequireCheck = false
     private var key: String? = null
     private var pkName: String? = ""
+    private var isSetting: Boolean = false
 
 
     private lateinit var config: VPermissionsConfig
+
+    //是否有点击了去授权也就是前往设置界面
+    private var isRequireCheck = false
+    private var isPause = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,13 +41,11 @@ class VPermissionsActivity : AppCompatActivity() {
             return
         }
 
-        isRequireCheck = true
-
         intent?.run {
 
             permissionListBean =
                 this.getSerializableExtra("permissionListBean") as ArrayList<VPermissionsBean>
-
+            isSetting = this.getBooleanExtra("isSetting", false)
             pkName = this.getStringExtra("packageName")
             key = this.getStringExtra("key")
 
@@ -53,29 +53,22 @@ class VPermissionsActivity : AppCompatActivity() {
 
         }
 
+        if (isSetting) {
+            showMissingPermissionDialog()
+        } else {
+            showNeedPermissionDialog()
+        }
+
     }
 
     override fun onResume() {
         super.onResume()
-        if (isRequireCheck) {
-            when {
-                VPermissionsUtil.hasPermission(this, permissionListBean) -> {
-                    permissionsPass()
-                }
-                else -> {
-                    showNeedPermissionDialog()
-                    isRequireCheck = false
-                }
-            }
-        } else {
-            isRequireCheck = true
+        if (isPause) {
+            callBackPermissions()
         }
+
     }
 
-    // 请求权限兼容低版本
-    private fun requestPermissions(permission: Array<String>) {
-        ActivityCompat.requestPermissions(this, permission, PERMISSION_REQUEST_CODE)
-    }
 
     /**
      * 用户权限处理,
@@ -92,20 +85,22 @@ class VPermissionsActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
 
-        //部分厂商手机系统返回授权成功时，厂商可以拒绝权限，所以要用PermissionChecker二次判断
-        if (requestCode == PERMISSION_REQUEST_CODE && VPermissionsUtil.isGranted(*grantResults)) {
-            permissionsPass()
+        if (requestCode != PERMISSION_REQUEST_CODE) {
+            return
         }
-        //拒绝权限是否需要第二次提醒
-        else if (config.isShowRefuseDialog) {
-            showMissingPermissionDialog()
-        }
-        //权限申请失败
-        else {
-            permissionsDenied(true)
+        isPause = false
 
+
+        permissions.forEach {
+            //是否永不提醒 true没有点击   false点击了永不提醒
+            if (!VPermissionsUtil.isNeverRemind(this@VPermissionsActivity, it)
+            ) {
+                VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
+                    .putString(it, it)
+            }
         }
 
+        callBackPermissions()
     }
 
     // 显示缺失权限提示 点击跳转到设置页面
@@ -123,8 +118,12 @@ class VPermissionsActivity : AppCompatActivity() {
                     )
         )
 
-        dialog.setNegativeButton(config.beanRefuse.cancel) { dialog, which -> permissionsDenied() }
+        dialog.setNegativeButton(config.beanRefuse.cancel) { dialog, which ->
+            dialog.dismiss()
+            callBackPermissions()
+        }
         dialog.setPositiveButton(config.beanRefuse.confirm) { dialog, which ->
+            dialog.dismiss()
             VPermissionsUtil.gotoSetting(this@VPermissionsActivity, pkName!!)
         }
         dialog.setCancelable(false)
@@ -140,7 +139,10 @@ class VPermissionsActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
         dialog.setTitle(config.beanFirst.title)
         dialog.setMessage(config.beanFirst.content + VPermissionsUtil.getTipMsg(listOff))
-        dialog.setNegativeButton(config.beanFirst.cancel) { dialog, which -> permissionsDenied() }
+        dialog.setNegativeButton(config.beanFirst.cancel) { dialog, which ->
+            dialog.dismiss()
+            callBackPermissions()
+        }
         dialog.setPositiveButton(config.beanFirst.confirm) { _, _ ->
             val ps = ArrayList<String>()
             listOff.forEach {
@@ -148,7 +150,8 @@ class VPermissionsActivity : AppCompatActivity() {
                     ps.add(this.permission)
                 }
             }
-            requestPermissions(ps.toTypedArray()) // 请求权限,回调时会触发onResume
+            // 请求权限,回调时会触发onResume
+            ActivityCompat.requestPermissions(this, ps.toTypedArray(), PERMISSION_REQUEST_CODE)
         }
         dialog.setCancelable(false)
         dialog.show()
@@ -156,56 +159,56 @@ class VPermissionsActivity : AppCompatActivity() {
 
     }
 
-    private fun permissionsDenied(isApply: Boolean = false) {
-        VPermissionsUtil.fetchCallbackListener(key)?.run {
+//    private fun permissionsDenied(isApply: Boolean = false) {
+//        VPermissionsUtil.fetchCallbackListener(key)?.run {
+//            var listNeverRemind = ArrayList<VPermissionsBean>()
+//            if (isApply) {
+//
+//                VPermissionsUtil.getPermissionDenied(
+//                    this@VPermissionsActivity,
+//                    true,
+//                    permissionListBean
+//                ).forEach {
+//                    //是否永不提醒 true没有点击   false点击了永不提醒
+//                    if (!VPermissionsUtil.isNeverRemind(this@VPermissionsActivity, it.permission)) {
+//                        listNeverRemind.add(it)
+//
+//                        VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
+//                            .putString(it.permission, it.permission)
+//                    }
+//                }
+//
+//            }
+//
+//            if (listNeverRemind.size > 0) {
+//                onNeverRemind(listNeverRemind)
+//                //拒绝权限点击了永不显示 是否需要第二次提醒
+//                if (config.isShowRefuseDialog) {
+//                    showMissingPermissionDialog()
+//                } else {
+//                    finish()
+//                }
+//            } else {
+//                onDenied(
+//                    VPermissionsUtil.getPermissionDenied(
+//                        this@VPermissionsActivity,
+//                        true,
+//                        permissionListBean
+//                    )
+//                )
+//                finish()
+//            }
+//
+//
+//        }
+//
+//    }
 
 
-            if (isApply) {
-                var listNeverRemind = ArrayList<VPermissionsBean>()
-                VPermissionsUtil.getPermissionDenied(
-                    this@VPermissionsActivity,
-                    true,
-                    permissionListBean
-                ).forEach {
-                    //是否永不提醒 true没有点击   false点击了永不提醒
-                    val isNeverRemind =
-                        ActivityCompat.shouldShowRequestPermissionRationale(
-                            this@VPermissionsActivity, it.permission
-                        )
-                    if (!isNeverRemind) {
-                        listNeverRemind.add(it)
-                    }
-                }
-                if (listNeverRemind.size > 0) {
-                    onNeverRemind(listNeverRemind)
-                }
-            }
+    override fun onPause() {
+        isPause = true
+        super.onPause()
 
-            onDenied(
-                VPermissionsUtil.getPermissionDenied(
-                    this@VPermissionsActivity,
-                    true,
-                    permissionListBean
-                )
-            )
-
-        }
-        finish()
-    }
-
-
-    // 全部权限均已获取
-    private fun permissionsPass() {
-        VPermissionsUtil.fetchCallbackListener(key)?.run {
-            onPass(
-                VPermissionsUtil.getPermissionPass(
-                    this@VPermissionsActivity,
-                    true,
-                    permissionListBean
-                )
-            )
-        }
-        finish()
     }
 
     override fun onDestroy() {
@@ -213,5 +216,63 @@ class VPermissionsActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+
+    //判断所有权限返回相对应的回调
+    private fun callBackPermissions() {
+
+        //永不提醒
+        var listNeverRemind = ArrayList<VPermissionsBean>()
+        //申请通过
+        var listPass = ArrayList<VPermissionsBean>()
+        //拒绝的
+        var listDenied = ArrayList<VPermissionsBean>()
+
+        //权限全部授权了才会回调授权成功
+        if (VPermissionsUtil.hasPermission(this, permissionListBean)) {
+            listPass.addAll(permissionListBean)
+            VPermissionsUtil.fetchCallbackListener(key)?.run {
+                onPass(listPass)
+            }
+
+            finish()
+        } else {
+
+            //拒绝权限 是否需要第二次提醒
+            if (config.isShowRefuseDialog) {
+                showMissingPermissionDialog()
+                config.isShowRefuseDialog = false
+            } else {
+                permissionListBean.forEach {
+                    //获取当前权限是否点击了永不保存 并且保存了起来
+                    val sp = VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
+                        .getString(it.permission)
+                    if (!sp.isNullOrEmpty()) {
+                        listNeverRemind.add(it)
+                        VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
+                            .putString(it.permission, it.permission)
+                    }
+                    if (!VPermissionsUtil.hasPermission(
+                            this@VPermissionsActivity,
+                            it.permission
+                        )
+                    ) {
+                        listDenied.add(it)
+                    }
+                }
+
+                VPermissionsUtil.fetchCallbackListener(key)?.run {
+                    onDenied(listDenied)
+                    if (listNeverRemind.size > 0) {
+                        onNeverRemind(listNeverRemind)
+                    }
+                }
+
+                finish()
+            }
+
+        }
+
+
+    }
 
 }

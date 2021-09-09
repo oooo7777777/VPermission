@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
             beanRefuse = VPermissionsHintBean("警告", "因为你拒绝了权限，导致部分功能无法正常使用，请允许以下权限。", "取消", "去授权")
             //每个权限的文案 是使用详细的还是模糊的  详细的为每个权限的文案 模糊的为每一组文案
             isTipDetail = true
-            //权限拒绝后 是否弹出第二次弹窗
+            //拒绝权限点击了永不显示  是否弹出第二次弹窗
             isShowRefuseDialog = true
         }
     }
@@ -49,9 +49,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bt0).setOnClickListener {
 
             VPermissions.Builder()
-                .setConfig(VPermissionsConfig().apply {
-                    isShowRefuseDialog = false
-                })
                 .setPermission(Manifest.permission.RECORD_AUDIO)
                 .callback(object : VPermissionsListener {
                     override fun onPass(list: ArrayList<VPermissionsBean>) {
@@ -129,6 +126,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bt3).setOnClickListener {
 
             VPermissions.Builder()
+                .setConfig(VPermissionsConfig().apply {
+                    isShowRefuseDialog = false
+                })
                 .setPermission(Manifest.permission.CAMERA)
                 .callback(object : VPermissionsListener {
                     override fun onPass(list: ArrayList<VPermissionsBean>) {

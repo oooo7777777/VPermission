@@ -20,7 +20,7 @@ data class VPermissionsConfig(
         "取消",
         "去授权"
     ),//权限拒绝后再次弹窗 如果不传会使用默认的
-    var isShowRefuseDialog: Boolean = true,//权限拒绝后 是否弹出第二次弹窗
+    var isShowRefuseDialog: Boolean = true,//拒绝权限点击了永不显示  是否弹出第二次弹窗
     var isTipDetail: Boolean = true//每个权限的文案 是使用详细的还是模糊的  详细的为每个权限的文案 模糊的为每一组文案
 ) : Serializable
 

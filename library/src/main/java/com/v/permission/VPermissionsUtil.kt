@@ -41,35 +41,42 @@ object VPermissionsUtil {
             if (result != PermissionChecker.PERMISSION_GRANTED) {
                 return false
             }
+            VPermissionsSPUtil.getInstance(context)
+                .remove(per.permission)
         }
         return true
     }
 
+
     /**
-     * 判断一组授权结果是否为授权通过
+     * 判断权限是否授权
      *
-     * @param grantResult
+     * @param context
+     * @param permissions
      * @return
      */
-    fun isGranted(vararg grantResult: Int): Boolean {
-        if (grantResult.isEmpty()) {
+    fun hasPermission(context: Context, permissions: String): Boolean {
+        if (permissions.isNullOrEmpty()) {
             return false
         }
-        for (result in grantResult) {
-            if (result != PackageManager.PERMISSION_GRANTED) {
+        for (per in permissions) {
+            val result = PermissionChecker.checkSelfPermission(context,permissions)
+            if (result != PermissionChecker.PERMISSION_GRANTED) {
                 return false
             }
+            VPermissionsSPUtil.getInstance(context)
+                .remove(permissions)
         }
         return true
     }
 
     /**
      * 判断该权限是否永不提醒
+     * 必须是授权弹窗出现的时候 才能获取到准确的判断
      */
     fun isNeverRemind(act: Activity, permission: String): Boolean {
-        val b = shouldShowRequestPermissionRationale(act, permission)
-        Log.i("VPermissions", b.toString())
-        return b
+        //是否永不提醒 true没有点击   false点击了永不提醒
+        return shouldShowRequestPermissionRationale(act, permission)
     }
 
     /**
@@ -178,44 +185,7 @@ object VPermissionsUtil {
         return list
     }
 
-    /**
-     * 获取已授权的权限
-     *
-     * @param context
-     * @param isTipDetail 是否显示每个权限的文字
-     * @param permissions
-     * @return
-     */
-    fun getPermissionPass(
-        @NonNull context: Context,
-        isTipDetail: Boolean,
-        permissions: ArrayList<VPermissionsBean>
-    ): ArrayList<VPermissionsBean> {
-        val list = ArrayList<VPermissionsBean>()
-        if (permissions.isEmpty()) {
-            return list
-        }
 
-        permissions.forEach {
-            val result = PermissionChecker.checkSelfPermission(context, it.permission)
-            if (result == PermissionChecker.PERMISSION_GRANTED) {
-                if (it.des.isNullOrEmpty()) {
-                    if (isTipDetail) {
-                        getPermissionTipDetail(it.permission)?.run {
-                            list.add(this)
-                        }
-                    } else {
-                        getPermissionTip(it.permission)?.run {
-                            list.add(this)
-                        }
-                    }
-                } else {
-                    list.add(it)
-                }
-            }
-        }
-        return list
-    }
 
     /**
      * 跳转到当前应用对应的设置页面
