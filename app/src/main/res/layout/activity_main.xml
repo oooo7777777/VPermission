@@ -12,14 +12,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:text="开启单个权限" />
+        android:text="申请权限弹窗" />
 
     <Button
         android:id="@+id/bt1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:text="开启一组权限" />
+        android:text="修改默认弹窗文案" />
 
     <Button
         android:id="@+id/bt2"
@@ -34,7 +34,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:text="自定义Dialog" />
+        android:text="申请权限" />
 
 
 </LinearLayout>

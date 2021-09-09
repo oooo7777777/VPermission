@@ -71,7 +71,14 @@ class VPermissions {
 
 
         fun create(context: Context) {
+            dispose(context, false)
+        }
 
+        fun createDialog(context: Context) {
+            dispose(context, true)
+        }
+
+        private fun dispose(context: Context, isDialog: Boolean) {
             if (list.isNullOrEmpty()) {
                 throw Exception("VPermissions 申请的权限不能为空")
             }
@@ -89,35 +96,21 @@ class VPermissions {
             val key = System.currentTimeMillis().toString()
             VPermissionsUtil.callbackMap[key] = permissions.permissionsListener!!
 
-            //永不提醒
-            var listNeverRemind = ArrayList<VPermissionsBean>()
-            list?.forEach {
-                val sp = VPermissionsSPUtil.getInstance(context).getString(it.permission)
-                if (!sp.isNullOrEmpty()) {
-                    listNeverRemind.add(it)
-                }
-            }
-
-
             if (VPermissionsUtil.hasPermission(context, list!!)) {
                 VPermissionsUtil.fetchCallbackListener(key)?.run {
                     onPass(list!!)
                 }
             } else {
-                if (listNeverRemind.size > 0) {
-                    permissionsListener?.onNeverRemind(listNeverRemind)
-                }
 
                 val intent = Intent(context, VPermissionsActivity::class.java)
                 intent.putExtra("permissionListBean", list)
                 intent.putExtra("packageName", context.packageName)
                 intent.putExtra("key", key)
                 intent.putExtra("config", permissions.config)
-                intent.putExtra("isSetting", listNeverRemind.size > 0)
+                intent.putExtra("isDialog", isDialog)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             }
-
 
         }
     }
