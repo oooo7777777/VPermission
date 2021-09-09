@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId "com.v.permission"
-        minSdkVersion 23
+        minSdkVersion 21
         targetSdkVersion 30
-        versionCode 102
-        versionName "1.0.2"
+        versionCode 100
+        versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
