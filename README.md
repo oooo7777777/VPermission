@@ -129,13 +129,34 @@ dependencies {
 
 ```
 
-#### 创建方式
+#### 其他
 
+- **自定义配置VPermissionsConfig**
+
+```
+VPermissionsConfig(
+    //申请权限弹窗文案
+    var beanFirst: VPermissionsHintBean = VPermissionsHintBean(
+        "权限申请",
+        "请允许以下权限，否则将影响应用的正常使用。",
+        "取消",
+        "确定"
+    ),
+    //第二次权限弹窗文案
+    var beanRefuse: VPermissionsHintBean = VPermissionsHintBean(
+        "部分功能无法使用",
+        "请允许以下权限，否则将影响应用的正常使用。",
+        "取消",
+        "去授权"
+    ),
+    var isShowRefuseDialog: Boolean = true,//拒绝权限后  是否弹出第二次弹窗
+    var isTipDetail: Boolean = true//每个权限的文案 是使用详细的还是模糊的  详细的为每个权限的对应文案 模糊的为每一组文案
+) 
+```
 
 - **createDialog(this)**
 这种创建方式会使用VPermissions里面写好的dialog
 
 - **create(this)**
 这种方式不会显示dialog,只会回调callback
-
 
