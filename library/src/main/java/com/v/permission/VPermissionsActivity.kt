@@ -7,7 +7,6 @@ import android.os.Looper
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.v.permission.floatwindow.PermissionFragment
 import com.v.permission.floatwindow.VFloatWindowUtils
 import java.util.*
 import kotlin.collections.ArrayList
