@@ -12,6 +12,7 @@ import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
+import com.v.permission.floatwindow.VFloatWindowUtils
 import com.v.permission.listener.VPermissionsListener
 import java.util.*
 import kotlin.collections.ArrayList
@@ -37,16 +38,35 @@ object VPermissionsUtil {
             return false
         }
         for (per in permissions) {
-            val result = PermissionChecker.checkSelfPermission(context, per.permission)
-            if (result != PermissionChecker.PERMISSION_GRANTED) {
-                return false
+            //权限组里面是否有悬浮窗权限
+            if (per.permission == Manifest.permission.SYSTEM_ALERT_WINDOW) {
+                if (!VFloatWindowUtils.checkPermission(context)) {
+                    return false
+                }
+            } else {
+                val result = PermissionChecker.checkSelfPermission(context, per.permission)
+                if (result != PermissionChecker.PERMISSION_GRANTED) {
+                    return false
+                }
+                VPermissionsSPUtil.getInstance(context)
+                    .remove(per.permission)
             }
-            VPermissionsSPUtil.getInstance(context)
-                .remove(per.permission)
         }
         return true
     }
 
+    /**
+     * 权限组里面是否有申请悬浮窗权限
+     */
+    fun isFloatWindowPermission(permissions: ArrayList<VPermissionsBean>): Boolean {
+
+        for (per in permissions) {
+            if (per.permission == Manifest.permission.SYSTEM_ALERT_WINDOW) {
+                return true
+            }
+        }
+        return false
+    }
 
     /**
      * 判断权限是否授权
@@ -59,14 +79,21 @@ object VPermissionsUtil {
         if (permissions.isNullOrEmpty()) {
             return false
         }
-        for (per in permissions) {
-            val result = PermissionChecker.checkSelfPermission(context,permissions)
+
+        //权限组里面是否有悬浮窗权限
+        if (permissions == Manifest.permission.SYSTEM_ALERT_WINDOW) {
+            if (!VFloatWindowUtils.checkPermission(context)) {
+                return false
+            }
+        } else {
+            val result = PermissionChecker.checkSelfPermission(context, permissions)
             if (result != PermissionChecker.PERMISSION_GRANTED) {
                 return false
             }
             VPermissionsSPUtil.getInstance(context)
                 .remove(permissions)
         }
+
         return true
     }
 
@@ -98,9 +125,7 @@ object VPermissionsUtil {
         }
 
         permissions.forEach {
-            val result = PermissionChecker.checkSelfPermission(context, it.permission)
-            if (result != PackageManager.PERMISSION_GRANTED) {
-
+            if (!hasPermission(context, it.permission)) {
                 //如果用户没有自定义权限的文案 就获取默认的
                 if (it.des.isNullOrEmpty()) {
                     if (isTipDetail) {
@@ -186,7 +211,6 @@ object VPermissionsUtil {
     }
 
 
-
     /**
      * 跳转到当前应用对应的设置页面
      *
@@ -258,6 +282,10 @@ object VPermissionsUtil {
             }
             Manifest.permission.BODY_SENSORS ->
                 return VPermissionsBean("传感器权限", it)
+
+            Manifest.permission.SYSTEM_ALERT_WINDOW ->
+                return VPermissionsBean("悬浮窗权限", it)
+
             else -> {
                 return null
             }
@@ -330,6 +358,8 @@ object VPermissionsUtil {
                 return VPermissionsBean("发送短信权限", it)
             Manifest.permission.BODY_SENSORS ->
                 return VPermissionsBean("传感器权限", it)
+            Manifest.permission.SYSTEM_ALERT_WINDOW ->
+                return VPermissionsBean("悬浮窗权限", it)
             else -> {
                 return null
             }

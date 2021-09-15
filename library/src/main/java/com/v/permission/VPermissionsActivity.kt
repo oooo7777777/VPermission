@@ -1,9 +1,14 @@
 package com.v.permission
 
+import android.Manifest
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.v.permission.floatwindow.PermissionFragment
+import com.v.permission.floatwindow.VFloatWindowUtils
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -16,7 +21,7 @@ class VPermissionsActivity : AppCompatActivity() {
 
 
     companion object {
-        private const val PERMISSION_REQUEST_CODE = 964
+        const val PERMISSION_REQUEST_CODE = 964
     }
 
     private lateinit var permissionListBean: ArrayList<VPermissionsBean>
@@ -31,6 +36,9 @@ class VPermissionsActivity : AppCompatActivity() {
 
     //是否展示dialog
     private var isDialog = false
+
+    //权限组是否存在悬浮窗权限
+    private var isFloatWindowPermission = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,40 +60,17 @@ class VPermissionsActivity : AppCompatActivity() {
 
         }
 
+        isFloatWindowPermission = VPermissionsUtil.isFloatWindowPermission(permissionListBean)
 
-        //永不提醒的权限是否跟传进来的权限一一对应
-        var equalCount = 0
-        //永不提醒
-        var listNeverRemind = ArrayList<VPermissionsBean>()
-        permissionListBean.forEach {
-            val sp = VPermissionsSPUtil.getInstance(this).getString(it.permission)
-            if (!sp.isNullOrEmpty()) {
-                listNeverRemind.add(it)
-
-                if (it.permission == sp) {
-                    equalCount++
-                }
-            }
-
-        }
-
-        //如果永不提醒的权限跟传进来的权限对应的上 就展示去设置的dialog
 
         if (isDialog) {
-            if (equalCount == permissionListBean.size) {
-                showMissingPermissionDialog()
-            } else {
-                showNeedPermissionDialog()
-            }
-        }
-        else
-        {
+            showNeedPermissionDialog()
+        } else {
             val ps = ArrayList<String>()
             permissionListBean.forEach {
                 ps.add(it.permission)
             }
-            ActivityCompat.requestPermissions(this, ps.toTypedArray(), PERMISSION_REQUEST_CODE)
-
+            requestPermissions(ps.toTypedArray())
         }
 
     }
@@ -98,6 +83,16 @@ class VPermissionsActivity : AppCompatActivity() {
 
     }
 
+
+    // 请求权限,回调时会触发onResume
+    private fun requestPermissions(permission: Array<String>) {
+        //如果申请得权限只有一条 并且这个一条得权限是悬浮窗权限
+        if (permission.size == 1 && permission[0] == Manifest.permission.SYSTEM_ALERT_WINDOW) {
+            VFloatWindowUtils.requestPermission(this)
+        } else {
+            ActivityCompat.requestPermissions(this, permission, PERMISSION_REQUEST_CODE)
+        }
+    }
 
     /**
      * 用户权限处理,
@@ -119,35 +114,46 @@ class VPermissionsActivity : AppCompatActivity() {
         }
         isPause = false
 
-
-        permissions.forEach {
-            //是否永不提醒 true没有点击   false点击了永不提醒
-            if (!VPermissionsUtil.hasPermission(
-                    this@VPermissionsActivity,
-                    it
-                ) && !VPermissionsUtil.isNeverRemind(this@VPermissionsActivity, it)
-            ) {
-                VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
-                    .putString(it, it)
+        // 需要延迟执行，不然即使授权，仍有部分机型获取不到权限
+        Handler(Looper.getMainLooper()).postDelayed({
+            permissions.forEach {
+                //是否永不提醒 true没有点击   false点击了永不提醒
+                if (!VPermissionsUtil.hasPermission(
+                        this@VPermissionsActivity,
+                        it
+                    ) && !VPermissionsUtil.isNeverRemind(this@VPermissionsActivity, it)
+                ) {
+                    VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
+                        .putString(it, it)
+                }
             }
-        }
 
-        callBackPermissions()
+            if (isFloatWindowPermission && !VFloatWindowUtils.checkPermission(this)) {
+                VFloatWindowUtils.requestPermission(this)
+                isFloatWindowPermission = false
+            } else {
+                callBackPermissions()
+            }
+
+        }, 500)
+
+
     }
 
     // 显示缺失权限提示 点击跳转到设置页面
     private fun showMissingPermissionDialog() {
+
+        //获取未授权权限
+        var ls = VPermissionsUtil.getPermissionDenied(
+            this,
+            config.isTipDetail,
+            permissionListBean
+        )
+
         val dialog = AlertDialog.Builder(this)
         dialog.setTitle(config.beanRefuse.title)
         dialog.setMessage(
-            config.beanRefuse.content +
-                    VPermissionsUtil.getTipMsg(
-                        VPermissionsUtil.getPermissionDenied(
-                            this,
-                            config.isTipDetail,
-                            permissionListBean
-                        )
-                    )
+            config.beanRefuse.content + VPermissionsUtil.getTipMsg(ls)
         )
 
         dialog.setNegativeButton(config.beanRefuse.cancel) { dialog, which ->
@@ -156,7 +162,14 @@ class VPermissionsActivity : AppCompatActivity() {
         }
         dialog.setPositiveButton(config.beanRefuse.confirm) { dialog, which ->
             dialog.dismiss()
-            VPermissionsUtil.gotoSetting(this@VPermissionsActivity, pkName!!)
+
+            //如果申请得权限只有一条 并且这个一条得权限是悬浮窗权限
+            if (ls.size == 1 && ls[0].permission == Manifest.permission.SYSTEM_ALERT_WINDOW) {
+                VFloatWindowUtils.requestPermission(this)
+            } else {
+                VPermissionsUtil.gotoSetting(this@VPermissionsActivity, pkName!!)
+            }
+
         }
         dialog.setCancelable(false)
         dialog.show()
@@ -182,8 +195,7 @@ class VPermissionsActivity : AppCompatActivity() {
                     ps.add(this.permission)
                 }
             }
-            // 请求权限,回调时会触发onResume
-            ActivityCompat.requestPermissions(this, ps.toTypedArray(), PERMISSION_REQUEST_CODE)
+            requestPermissions(ps.toTypedArray())
         }
         dialog.setCancelable(false)
         dialog.show()
@@ -233,7 +245,7 @@ class VPermissionsActivity : AppCompatActivity() {
                     //获取当前权限是否点击了永不保存 并且保存了起来
                     val sp = VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
                         .getString(it.permission)
-                    if (!sp.isNullOrEmpty()) {
+                    if (!sp.isNullOrEmpty() && it.permission != Manifest.permission.SYSTEM_ALERT_WINDOW) {
                         listNeverRemind.add(it)
                         VPermissionsSPUtil.getInstance(this@VPermissionsActivity)
                             .putString(it.permission, it.permission)

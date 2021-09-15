@@ -102,6 +102,7 @@ class VPermissions {
                 }
             } else {
 
+
                 val intent = Intent(context, VPermissionsActivity::class.java)
                 intent.putExtra("permissionListBean", list)
                 intent.putExtra("packageName", context.packageName)
