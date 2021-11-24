@@ -35,7 +35,7 @@ public class MeizuUtils {
     public static void applyPermission(Activity activity) {
         try {
             Intent intent = new Intent("com.meizu.safe.security.SHOW_APPSEC");
-            intent.putExtra("packageName",activity.getPackageName());
+            intent.putExtra("packageName", activity.getPackageName());
             activity.startActivityForResult(intent, VPermissionsActivity.PERMISSION_REQUEST_CODE);
         } catch (Exception e) {
             try {

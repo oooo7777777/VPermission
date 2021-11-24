@@ -203,7 +203,7 @@ object VPermissionsUtil {
                 return VPermissionsBean("联系人权限", it)
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION ->
-                return VPermissionsBean("位置权限", it)
+                return VPermissionsBean("定位权限", it)
             Manifest.permission.RECORD_AUDIO ->
                 return VPermissionsBean("录音权限", it)
             Manifest.permission.READ_PHONE_STATE,

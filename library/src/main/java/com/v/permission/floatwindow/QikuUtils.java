@@ -54,7 +54,7 @@ public class QikuUtils {
     public static void applyPermission(Activity activity) {
         Intent intent = new Intent();
         intent.setClassName("com.android.settings", "com.android.settings.Settings$OverlaySettingsActivity");
-        if (isIntentAvailable(intent,activity)) {
+        if (isIntentAvailable(intent, activity)) {
             activity.startActivityForResult(intent, VPermissionsActivity.PERMISSION_REQUEST_CODE);
         } else {
             intent.setClassName("com.qihoo360.mobilesafe", "com.qihoo360.mobilesafe.ui.index.AppEnterActivity");

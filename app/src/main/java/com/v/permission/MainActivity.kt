@@ -58,15 +58,15 @@ class MainActivity : AppCompatActivity() {
                     beanRefuse =
                         VPermissionsHintBean("警告", "因为你拒绝了权限，导致部分功能无法正常使用，请允许以下权限。", "取消", "去授权")
                     //每个权限的文案 是使用详细的还是模糊的  详细的为每个权限的文案 模糊的为每一组文案
-                    isTipDetail = true
+                    isTipDetail = false
                     //拒绝权限点击了  是否弹出第二次弹窗
                     isShowRefuseDialog = true
                 })
                 .setPermission(
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.CAMERA,
-                    Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    Manifest.permission.SYSTEM_ALERT_WINDOW,
+                    Manifest.permission.RECORD_AUDIO
                 )
                 .callback(object : VPermissionsListener {
                     override fun onPass(list: ArrayList<VPermissionsBean>) {

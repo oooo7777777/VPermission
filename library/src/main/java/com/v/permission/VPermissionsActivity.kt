@@ -18,7 +18,6 @@ import kotlin.collections.ArrayList
  */
 class VPermissionsActivity : AppCompatActivity() {
 
-
     companion object {
         const val PERMISSION_REQUEST_CODE = 964
     }

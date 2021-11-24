@@ -10,14 +10,12 @@ class VPermissions {
 
     private var config: VPermissionsConfig? = null
     private var permissionsListener: VPermissionsListener? = null
-    private var list: ArrayList<VPermissionsBean>? = null
-
+    private var list: ArrayList<VPermissionsBean> = ArrayList()
 
     class Builder {
-
-        private var config: VPermissionsConfig? = null
+        private var config: VPermissionsConfig = VPermissionsConfig()
         private var permissionsListener: VPermissionsListener? = null
-        private var list: ArrayList<VPermissionsBean>? = null
+        private var list: ArrayList<VPermissionsBean> = ArrayList()
 
 
         /**
@@ -32,31 +30,36 @@ class VPermissions {
          * 设置默认提示文案 需要申请的权限
          */
         fun setPermission(vararg permissions: String): Builder {
-            this.list?.clear()
-
-            var list = ArrayList<VPermissionsBean>()
+            var arrayList = ArrayList<VPermissionsBean>()
+            var desList = ArrayList<String>()
             permissions.forEach {
-                if (config?.isTipDetail == true) {
+                if (config.isTipDetail) {
                     VPermissionsUtil.getPermissionTipDetail(it)?.run {
-                        list.add(this)
+                        if (!desList.contains(this.des)) {
+                            arrayList.add(this)
+                        }
+                        desList.add(this.des)
                     }
                 } else {
                     VPermissionsUtil.getPermissionTip(it)?.run {
-                        list.add(this)
+                        if (!desList.contains(this.des)) {
+                            arrayList.add(this)
+                        }
+                        desList.add(this.des)
+
                     }
                 }
             }
-            this.list = list
+            this.list.addAll(arrayList)
             return this
         }
 
         /**
          * 设置自定义提示文案 需要申请的权限
          */
-        fun setPermission(list: ArrayList<VPermissionsBean>): Builder {
-            this.list?.clear()
-
-            this.list = list
+        fun setPermission(arrayList: ArrayList<VPermissionsBean>): Builder {
+            this.list.clear()
+            this.list.addAll(arrayList)
             return this
         }
 
@@ -79,7 +82,8 @@ class VPermissions {
         }
 
         private fun dispose(context: Context, isDialog: Boolean) {
-            if (list.isNullOrEmpty()) {
+
+            if (list.size <= 0) {
                 throw Exception("VPermissions 申请的权限不能为空")
             }
 
@@ -89,8 +93,8 @@ class VPermissions {
 
 
             val permissions = VPermissions()
-            permissions.config = config ?: VPermissionsConfig()
-            permissions.list = list
+            permissions.config = config
+            permissions.list = list!!
             permissions.permissionsListener = permissionsListener
 
             val key = System.currentTimeMillis().toString()
@@ -101,8 +105,6 @@ class VPermissions {
                     onPass(list!!)
                 }
             } else {
-
-
                 val intent = Intent(context, VPermissionsActivity::class.java)
                 intent.putExtra("permissionListBean", list)
                 intent.putExtra("packageName", context.packageName)
@@ -114,5 +116,9 @@ class VPermissions {
             }
 
         }
+
+
     }
+
+
 }
